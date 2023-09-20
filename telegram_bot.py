@@ -8,10 +8,10 @@ from sqlalchemy import or_
 from models import session
 from datetime import datetime
 import logging
-from models import handler
 
 load_dotenv()
 TOKEN = os.environ['TG_BOT_TOKEN']
+handler = logging.FileHandler(f'telegram_bot.log', mode='a')
 logger = logging.getLogger(__name__)
 # logger.basicConfig(filename='telegram_bot.log', filemode='a', level=logger.INFO,
 #                     format='%(asctime)s %(levelname)s %(message)s')
@@ -191,5 +191,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-#TODO Сделать архив из файлов проекта кроме папки venv  и отправить Леониду
