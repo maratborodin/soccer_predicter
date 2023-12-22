@@ -13,7 +13,7 @@ from sqlalchemy.sql import func, exists
 from sqlalchemy.pool import NullPool
 import logging
 
-engine = db.create_engine('sqlite:///tournament.sqlite', poolclass=NullPool)
+engine = db.create_engine('postgresql+psycopg2://test:test@test_postgres:5432/test', poolclass=NullPool)
 Base = declarative_base()
 Session = sessionmaker(engine)
 ScopedSession = scoped_session(Session)
@@ -217,3 +217,9 @@ class Match(Model, Base):
     tour = relationship('Tour', back_populates='matches')
 
 #TODO почитать по UML про визуализацию
+#docker build -t soccer_predictor .
+#docker run -it -d -e POSTGRES_PASSWORD=test -e POSTGRES_USER=test -p 5432:5432 -v test_volume:/var/lib/postgresql/data --name test_postgres postgres
+#docker run --name soccer_predictor -p 8000:8000 -d --network test_network  soccer_predictor
+#docker run --mount type=bind,source=/Users/maratborodin/PycharmProjects/soccer_predict/src/web,target=/app/src --name soccer_predictor -p 8000:8000 -d --network test_network  soccer_predictor
+#docker run --mount type=bind,source=/Users/maratborodin/PycharmProjects/soccer_predict/src/telegram,target=/app/src --name telegram_bot -d --network test_network  telegram_bot
+#docker run --network test_network -d -p 80:80 --name test_nginx test_nginx

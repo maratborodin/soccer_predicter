@@ -103,23 +103,25 @@ def parse_calendar(url, tournament):
         #     }
         match_dt = datetime.combine(date, time)
         if date and time and team_1 and team_2:
-            if not match or not match.score_1 and not match.score_2:
-                match = Match.query.filter((Match.datetime==match_dt)&(Match.team_1==team_1)&(Match.team_2==team_2)).first()
-                if match:
-                    match.score_1 = score_1
-                    match.score_2 = score_2
-                else:
-                    match = Match(datetime=match_dt, team_1=team_1, team_2=team_2, score_1=score_1, score_2=score_2)
-                    new_matches_found = True
-                if tour is None or tour.number != tour_num:
-                    if tournament.id:
-                        tour = Tour.query.filter((Tour.number == tour_num)&(Tour.tournament == tournament)).first()
-                    if not tour or not tournament.id:
-                        tour = Tour(number=tour_num)
-                        tournament.tours.append(tour)
-                        logger.info('add tour')
+            #if not match or not match.score_1 and not match.score_2:
+            if tour is None or tour.number != tour_num:
+                if tournament.id:
+                    tour = Tour.query.filter((Tour.number == tour_num)&(Tour.tournament == tournament)).first()
+                if not tour or not tournament.id:
+                    tour = Tour(number=tour_num)
+                    tournament.tours.append(tour)
+                    logger.info('add tour')
+            match = Match.query.filter(
+                (Match.datetime == match_dt) & (Match.team_1 == team_1) & (Match.team_2 == team_2)).first()
+            if match and (not match.score_1 or not match.score_2) and (score_1 and score_2):
+                match.score_1 = score_1
+                match.score_2 = score_2
+                logger.info('match updated')
+            elif not match:
+                match = Match(datetime=match_dt, team_1=team_1, team_2=team_2, score_1=score_1, score_2=score_2)
                 tour.matches.append(match)
-                logger.info('add match')
+                logger.info(f'add match {match.team_1.name},{match.team_2.name}, {match.datetime}')
+                new_matches_found = True
         else:
             break
     return new_matches_found

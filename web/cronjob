@@ -1,0 +1,2 @@
+SHELL=/bin/bash
+*/3 * * * * cd /app/src/ && /app/venv/bin/python /app/src/parse_schedule.py > /app/src/stdout.log 2> /app/src/stderr.log

@@ -3,7 +3,7 @@ from models import Tournament, Tour, Team, Match
 from datetime import datetime as dt
 from models import engine
 from sqlalchemy.orm import sessionmaker
-from .models import session
+from models import session
 
 file = open('tournaments.json', 'r')
 data = json.loads(file.read())

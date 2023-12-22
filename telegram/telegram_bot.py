@@ -1,22 +1,23 @@
 from dotenv import load_dotenv
 import os
-from telegram.ext import Updater, MessageHandler, CommandHandler, Application, ContextTypes, filters, ConversationHandler
+from telegram.ext import MessageHandler, CommandHandler, Application, ContextTypes, filters, ConversationHandler
 from telegram import Update
-from models import Team, Match, Tournament, Tour, TeamDoesNotExist
-from sqlalchemy.sql import func
-from sqlalchemy import or_
-from models import session
-from datetime import datetime
+import requests
+from data_types import TeamDict, TournamentDict
+from exceptions import TeamDoesNotExist
+
 import logging
 
 load_dotenv()
 TOKEN = os.environ['TG_BOT_TOKEN']
-handler = logging.FileHandler(f'telegram_bot.log', mode='a')
+handler = logging.FileHandler(f'../telegram_bot.log', mode='a')
 logger = logging.getLogger(__name__)
 # logger.basicConfig(filename='telegram_bot.log', filemode='a', level=logger.INFO,
 #                     format='%(asctime)s %(levelname)s %(message)s')
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
+url = "http://soccer_predictor:8000"
+
 
 def show_menu():
     menu = """ Выберите действие:
@@ -38,18 +39,23 @@ async def handle_start(update: Update, context: ContextTypes):
 
 def show_tournaments():
     tournaments_data_str = ''
-    tournament: Tournament #Аннотация типов
-    for tournament in Tournament.query.all():
-        tournaments_data_str += f'{tournament.id}. {tournament.name} ({tournament.years}) \n'
+    # tournament: Tournament #Аннотация типов
+    # for tournament in Tournament.query.all():
+    tournament: TournamentDict
+    response = requests.get(f"{url}/tournaments/")
+    tournament_list = response.json()
+    for tournament in tournament_list:
+        tournaments_data_str += f'{tournament["id"]}. {tournament["name"]} ({tournament["years"]}) \n'
     logger.debug(f'вызван метод show_tournaments с результатом {tournaments_data_str}')
     return tournaments_data_str
 
 
 def show_teams(team_list):
     team_data_str = ''
-    team: Team #Аннотация типов
+    # team: Team #Аннотация типов
+    team: TeamDict
     for team in team_list:
-        team_data_str += f'{team.id}. {team.name} \n'
+        team_data_str += f'{team["id"]}. {team["name"]} \n'
     logger.debug(f'вызван метод show_teams с параметрами {team_list} и результатом {team_data_str}')
     return team_data_str
 
@@ -62,14 +68,20 @@ async def send_team_list(update: Update, context: ContextTypes, teams_data, mess
 
 
 async def show_teams_for_average_goals(update: Update, context: ContextTypes):
-    teams_data = Team.query.all()
-    await send_team_list(update, context, teams_data, message_text='Выберите команду')
+    # teams_data = Team.query.all()
+    response = requests.get(f"{url}/teams/")
+    teams_data = response.json()
+    await send_team_list(update, context, teams_data, message_text='Выберите команду ИЗ списка команд')
     logger.info('отправлено сообщение пользователю')
     return 4
 
 
 def get_average_goals_message(team_id):
-    avg_goals_count = Team.get_average_goals_count(team_id)
+    response = requests.get(f"{url}/teams/{team_id}/get_average_goals_count/")
+    # avg_goals_count = Team.get_average_goals_count(team_id)
+    if response.status_code == 404:
+        raise TeamDoesNotExist(f"Отсутствует команда с #{team_id}")
+    avg_goals_count = response.json()["count"]
     message = f'Среднее кол-во забитых мячей командой во всех турнирах: {int(avg_goals_count)}'
     # current_time = datetime.now()
     # print(current_time)
@@ -103,7 +115,9 @@ async def show_teams_for_goals(update: Update, context: ContextTypes):
     tournament_id = update.message.text
     logger.info(f'пользователь запросил демонстрацию команд для турнира {tournament_id}')
     context.user_data['tournament_id'] = tournament_id
-    teams_data = Team.get_team_list_by_tournament(tournament_id)
+    #teams_data = Team.get_team_list_by_tournament(tournament_id)
+    response = requests.get(f"{url}/teams/{tournament_id}/team_list_by_tournament/")
+    teams_data = response.json()
     logger.debug(f'для турнира {tournament_id} получена команда {teams_data}')
     await send_team_list(update, context, teams_data, message_text='Выберите команду')
     return 3
@@ -113,9 +127,10 @@ async def show_team_tournament_goals(update: Update, context: ContextTypes):
     team_id = update.message.text
     logger.info(f'пользователь выбрал команду {team_id}')
     context.user_data['team_id'] = team_id
-    team = Team.query.filter(Team.id == team_id).first()
+    #team = Team.query.filter(Team.id == team_id).first()
     tournament_id = context.user_data['tournament_id']
-    total_goals_count = team.get_all_goals_in_tournament(tournament_id)
+    response = requests.get(f"{url}/teams/{team_id}/{tournament_id}/get_goals_count_by_tournament/")
+    total_goals_count = response.json()["total_goals_count"]
     logger.debug(f'расчитано кол-во голов, забитых командой {total_goals_count}')
     message = f'Команда в этом турнире забила: {total_goals_count}'
     logger.info(f'сформировано сообщение с кол-вом голов {message}')
@@ -127,7 +142,9 @@ async def show_team_tournament_goals(update: Update, context: ContextTypes):
 
 
 async def choose_teams_for_match_statistic(update: Update, context: ContextTypes):
-    teams_data = Team.query.all()
+    #teams_data = Team.query.all()
+    response = requests.get(f"{url}/teams/")
+    teams_data = response.json()
     logger.info(f'пользователю отправлено сообщение для выбора 2х команд из {teams_data}')
     await send_team_list(update, context, teams_data, message_text='Выберите 2 команды. Запишите их через пробел')
     return 5
@@ -136,9 +153,14 @@ async def choose_teams_for_match_statistic(update: Update, context: ContextTypes
 async def show_teams_match_statistic(update: Update, context: ContextTypes):
     team_1_id, team_2_id = map(int, update.message.text.split(' '))
     logger.info(f'пользователь выбрал команды {team_1_id} {team_2_id}')
-    team_1_wins, draws, team_2_wins = Team.get_teams_matches_statistic(team_1_id, team_2_id)
-    team_1_name = Team.query.get(team_1_id).name
-    team_2_name = Team.query.get(team_2_id).name
+    response = requests.get(f"{url}/teams/{team_1_id}/{team_2_id}/get_teams_matches_statistic/")
+    team_1_wins, draws, team_2_wins = response.json().values()
+    response = requests.get(f"{url}/teams/{team_1_id}")
+    team_1_name = response.json()["name"]
+    response = requests.get(f"{url}/teams/{team_2_id}")
+    team_2_name = response.json()["name"]
+    #team_1_name = Team.query.get(team_1_id).name
+    #team_2_name = Team.query.get(team_2_id).name
     message = f'{team_1_name} {team_1_wins} {team_2_name} {team_2_wins} ничьи {draws}'
     await update.message.reply_text(message)
     logger.info(f'пользователю отправлен результат встреч {team_1_name} {team_2_name} {message}')
@@ -189,5 +211,8 @@ def main():
     logger.info('=====финиш=====')
 
 
+
+
 if __name__ == '__main__':
+    print('script running')
     main()

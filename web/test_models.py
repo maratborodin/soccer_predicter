@@ -1,10 +1,10 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
 from unittest.mock import patch
 from models import Team, TeamDoesNotExist, Match, Tour
-from telegram_bot import get_average_goals_message
+from src.telegram.telegram_bot import get_average_goals_message
 from datetime import datetime
-import telegram_bot
+from src.telegram import telegram_bot
+
 
 class TeamTestCase(TestCase):
 
@@ -37,11 +37,11 @@ class BotTestCase(TestCase):
 
     @patch.object(telegram_bot.Team, '_get_tournaments',
                   lambda team_id: Team.query.filter(Team.id == team_id)
-                                            .join(Match, Team.id == Match.team_1_id)
-                                            .join(Tour)
-                                            .with_entities(Tour.tournament_id)
-                                            .distinct()
-                                            .filter(Match.datetime < datetime(2022, 1, 1)))
+                  .join(Match, Team.id == Match.team_1_id)
+                  .join(Tour)
+                  .with_entities(Tour.tournament_id)
+                  .distinct()
+                  .filter(Match.datetime < datetime(2022, 1, 1)))
     def test_historic_average_goals_count(self):
         message = get_average_goals_message(5)
         self.assertEqual(message, 'Среднее кол-во забитых мячей командой во всех турнирах: 32')

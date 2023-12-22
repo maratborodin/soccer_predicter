@@ -1,8 +1,8 @@
-.env
-.idea/
+**/.env
+**/.idea/
 *.log
 *.sqlite
 *.json
-.DS_Store
-__pycache__/
+**/.DS_Store
+**/__pycache__/
 
