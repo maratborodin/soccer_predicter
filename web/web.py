@@ -97,7 +97,7 @@ async def get_teams_matches_statistic(team_id_1:int, team_id_2:int):
         team_id_2: номер второй команды
 
     Returns
-        json с количеством побед каждой из команд и количество мечей
+        json с количеством побед каждой из команд и количество нечей. Данные отображаются в telegramm боте
     """
     matches_data = Team.get_teams_matches_statistic(team_id_1, team_id_2)
     return {'team_1_wins':matches_data[0], 'draws':matches_data[1], 'team_2_wins':matches_data[2]}
