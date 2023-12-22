@@ -86,9 +86,19 @@ async def get_goals_count_by_tournament(team_id:int, tournament_id:int):
     total_goals_count = team.get_all_goals_in_tournament(tournament_id)
     return {'total_goals_count': total_goals_count}
 
-#получение статистики результатов игр между 2мя командами
+
 @team_router.get('/{team_id_1}/{team_id_2}/get_teams_matches_statistic/')
 async def get_teams_matches_statistic(team_id_1:int, team_id_2:int):
+    """
+    получение статистики результатов игр между 2мя командами
+
+    Arguments
+        team_id_1: номер первой команды
+        team_id_2: номер второй команды
+
+    Returns
+        json с количеством побед каждой из команд и количество мечей
+    """
     matches_data = Team.get_teams_matches_statistic(team_id_1, team_id_2)
     return {'team_1_wins':matches_data[0], 'draws':matches_data[1], 'team_2_wins':matches_data[2]}
 
