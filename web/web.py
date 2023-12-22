@@ -90,7 +90,7 @@ async def get_goals_count_by_tournament(team_id:int, tournament_id:int):
 @team_router.get('/{team_id_1}/{team_id_2}/get_teams_matches_statistic/')
 async def get_teams_matches_statistic(team_id_1:int, team_id_2:int):
     """
-    получение статистики результатов игр между 2мя командами
+    Получение статистики результатов игр между 2мя командами. Отображает сколько какая команда матчей выиграла и сколько было ничей
 
     Arguments
         team_id_1: номер первой команды
