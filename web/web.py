@@ -82,6 +82,12 @@ async def get_team_list_by_tournament(tournament_id:int):
 
 @team_router.get('/{team_id}/{tournament_id}/get_goals_count_by_tournament/')
 async def get_goals_count_by_tournament(team_id:int, tournament_id:int):
+    """
+
+    :param team_id: ID команды
+    :param tournament_id: ID турнира
+    :return: Кол-во забитых мячей командой в конкретном турнире
+    """
     team = Team.query.get(team_id)
     total_goals_count = team.get_all_goals_in_tournament(tournament_id)
     return {'total_goals_count': total_goals_count}
@@ -90,7 +96,7 @@ async def get_goals_count_by_tournament(team_id:int, tournament_id:int):
 @team_router.get('/{team_id_1}/{team_id_2}/get_teams_matches_statistic/')
 async def get_teams_matches_statistic(team_id_1:int, team_id_2:int):
     """
-    Получение статистики результатов игр между 2мя командами. Отображает сколько какая команда матчей выиграла и сколько было ничей
+    получение статистики результатов игр между 2(двумя) командами. Отображает сколько какая команда матчей выиграла и сколько было ничей
 
     Arguments
         team_id_1: номер первой команды
